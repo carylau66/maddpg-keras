@@ -1,3 +1,5 @@
+#JUST FOR LEARNING, copy form https://github.com/pr-shukla/maddpg-keras/:
+
 
 # MADDPG KERAS Implementation
 Implementation Multi-Agent Deep Deterministic Policy Gradient (MADDPG) algorithm in keras with very simple customization. Link to the paper https://arxiv.org/pdf/1706.02275.pdf
@@ -5,15 +7,17 @@ Implementation Multi-Agent Deep Deterministic Policy Gradient (MADDPG) algorithm
 Previous version of code is available in [v0.1](https://github.com/pr-shukla/maddpg-keras/tree/v0.1) branch
 
 ## Table of Contents
-- [Project Description](#project-description)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Code Structure](#code-structure)
-- [Possible Enhancements](#possible-enhancements)
-- [How to Contribute](#how-to-contribute)
-- [Support](#support)
-- [License](#license)
+- [MADDPG KERAS Implementation](#maddpg-keras-implementation)
+  - [Table of Contents](#table-of-contents)
+  - [Project Description](#project-description)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Code Structure](#code-structure)
+  - [Possible Enhancements](#possible-enhancements)
+  - [How to Contribute](#how-to-contribute)
+  - [Support](#support)
+  - [License](#license)
 
 ## Project Description
 * This is implementation of maddpg algorithm in **tensorflow keras** and is easy to understand
