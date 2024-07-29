@@ -1,3 +1,5 @@
+# OUActionNoise类用于生成Ornstein-Uhlenbeck噪声，这通常用于连续动作空间的探索。
+# 如果动作空间的范围或类型发生变化，你可能需要调整噪声的生成方式，以确保其仍然适合新的动作范围。
 import numpy as np
 
 class OUActionNoise:

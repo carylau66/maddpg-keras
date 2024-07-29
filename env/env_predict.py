@@ -1,3 +1,5 @@
+# 专注于预测阶段，即智能体应用所学策略进行决策的过程。预测环境通常不包含训练时的某些复杂性，如随机性和噪声，以确保智能体的决策过程尽可能地稳定和可预测。
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers

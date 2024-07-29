@@ -1,3 +1,5 @@
+# 在get_actor()函数中，你可以看到定义的输入层大小匹配了状态空间的维度，而输出层则根据动作空间进行了设计。
+# get_critic()函数定义了Critic网络，它接收状态和动作作为输入。如果状态或动作空间发生变化，你需要修改输入层的大小，以确保网络可以处理更新后的信息。
 import tensorflow as tf
 from tensorflow.keras import layers
 

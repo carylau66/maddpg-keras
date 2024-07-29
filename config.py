@@ -1,11 +1,17 @@
+# 这个文件包含了诸如学习率、批处理大小、目标网络更新频率等超参数。
+# 当智能体或动作空间的设定改变时，可能需要调整这些超参数以优化算法的性能。
+
+
 # Number of Episodes
-NUM_EPISODES = 3000
+# NUM_EPISODES = 3000
+NUM_EPISODES = 30
 
 # Checkpoints after which save models
 CHECKPOINTS = 100
 
 # Number of Steps in each episodes
-NUM_STEPS = 100
+# NUM_STEPS = 100
+NUM_STEPS = 10
 
 # For adding noise for exploration
 STD_DEV = 0.2
