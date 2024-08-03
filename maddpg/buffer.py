@@ -139,14 +139,14 @@ class Buffer:
       for i in range(num_agents):
       
         # Get sampling range
-        record_range = min(self.buffer_counter, self.buffer_capacity)
+        record_range = min(self.buffer_counter, self.buffer_capacity) # self.buffer_counter 表示已经存储的经验条目的总数
         
         # Randomly sample indices
-        batch_indices = np.random.choice(record_range, self.batch_size)
+        batch_indices = np.random.choice(record_range, self.batch_size) # record_range 范围内选择 batch_size == 64 个
 
         # Convert to tensors
         state_batch = tf.convert_to_tensor(self.state_buffer[batch_indices])
-        action_batch = tf.convert_to_tensor(self.action_buffer[batch_indices])
+        action_batch = tf.convert_to_tensor(self.action_buffer[batch_indices]) # 64 * 9 : batch_size * (num_agents * DIM_ACTION)
         reward_batch = tf.convert_to_tensor(self.reward_buffer[batch_indices])
         reward_batch = tf.cast(reward_batch, dtype=tf.float32)
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
@@ -166,12 +166,12 @@ class Buffer:
 
         for j in range(num_agents):
           # ------------------------------<
-          target_actions[:,j] = tf.reshape(
-              target_ac[j](next_state_batch[:,dim_agent_state*j:dim_agent_state*(j+1)]), [self.batch_size]
-              )
+          # target_actions[:,j] = tf.reshape(
+          #     target_ac[j](next_state_batch[:,dim_agent_state*j:dim_agent_state*(j+1)]), [self.batch_size]
+          #     )
           # --------------------------->
-          # target_action = tf.reshape(target_ac[j](next_state_batch[:, dim_agent_state * j:dim_agent_state * (j + 1)]), [self.batch_size])
-          # target_actions[:, j] = target_action 
+          target_action_temp = tf.reshape(target_ac[j](next_state_batch[:, dim_agent_state * j:dim_agent_state * (j + 1)]), [self.batch_size, DIM_ACTION]) # [self.batch_size, DIM_ACTION]是新的张量维度
+          target_actions[:, DIM_ACTION*j:DIM_ACTION*(j+1)] = target_action_temp #  NumPy 中，切片操作A:B的结束索引是排他性的，即B不包括在结果中。
         
         # Creating list of arguments for target critic network (Q'), to calculate y
         # arguments of Q' will be (x', a_1', a_2', ..., a_n') where n=num_agents
@@ -179,7 +179,8 @@ class Buffer:
 
         state_target_action_batch = [next_state_batch]
         for j in range(num_agents):
-            state_target_action_batch.append(target_actions[:,j])
+            # state_target_action_batch.append(target_actions[:,j]) #-----------------
+            state_target_action_batch.append(target_actions[:,DIM_ACTION*j:DIM_ACTION*(j+1)])
         
         # Creating list of arguments for critic network (Q), to calculate loss 
         # arguments of Q will be (x, a_1, a_2, ..., a_n) where n=num_agents
@@ -187,7 +188,8 @@ class Buffer:
 
         state_action_batch_critic = [state_batch]
         for j in range(num_agents):
-            state_action_batch_critic.append(action_batch[:,j])
+            # state_action_batch_critic.append(action_batch[:,j]) #-----------
+            state_action_batch_critic.append(action_batch[:,DIM_ACTION*j:DIM_ACTION*(j+1)])
     
         # Finding Gradient of loss function
 
@@ -238,7 +240,8 @@ class Buffer:
 
         for j in range(num_agents):
           a = ac_models[j](state_batch[:,dim_agent_state*j:dim_agent_state*(j+1)])
-          actions[:,j] = tf.reshape(a, [self.batch_size])
+          # actions[:,j] = tf.reshape(a, [self.batch_size, DIM_ACTION]) #---------------
+          actions[:,DIM_ACTION*j : DIM_ACTION*(j+1)] = tf.reshape(a, [self.batch_size, DIM_ACTION])
 
         # First gradient calculation is done for first element/experience of batch
 
@@ -254,15 +257,17 @@ class Buffer:
             # Here batch of x = state_batch_0 i.e. first element of batch
 
             state_actions = [np.array([state_batch[0]])]
-
+            temp_actions = [] # ---------
             for k in range(num_agents):
                 if k==i:
-                    state_actions.append(action_)
+                    # state_actions.append(action_) #---------------
+                    temp_actions.append(action_)
                 else:
-                    state_actions.append(np.array([actions[:,k][0]]))
-
+                    # state_actions.append(np.array([actions[:,k][0]])) #-------
+                    temp_actions.append(np.array([actions[:,DIM_ACTION*k : DIM_ACTION*(k+1)][0]]))
+            state_actions.append(temp_actions)
             # Calculate Q(x, a_1, a_2, ..., a_n)
-
+            # critic_value = cr_models[i](state_actions) #----------               #-----------------------
             critic_value = cr_models[i](state_actions)
 
         # Calculate gradients
@@ -298,7 +303,8 @@ class Buffer:
                     if l==i:
                       state_actions.append(action_)
                     else:
-                      state_actions.append(np.array([actions[:,l][k]]))
+                      # state_actions.append(np.array([actions[:,l][k]])) #-------------
+                      state_actions.append(np.array([actions[:,DIM_ACTION*l:DIM_ACTION*(l+1)][k]]))
 
                 critic_value = cr_models[i](state_actions)
 

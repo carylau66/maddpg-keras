@@ -3,7 +3,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 
-from env.env import DIM_AGENT_STATE, NUM_AGENTS
+from env.env import DIM_AGENT_STATE, NUM_AGENTS, DIM_ACTION
 
 def get_actor():
 
@@ -66,9 +66,11 @@ def get_critic(dim_state):
     state_out = layers.BatchNormalization()(state_out)
 
     # 
-    agents_action_input = [layers.Input(shape=(1)) for i in range(NUM_AGENTS)]
-    action_input = layers.Concatenate()(agents_action_input)
-    
+    # agents_action_input = [layers.Input(shape=(1)) for i in range(NUM_AGENTS)] # -----------
+    agents_action_input = [layers.Input(shape=(DIM_ACTION,)) for i in range(NUM_AGENTS)] # shape=(3,): 一个长度为 3 的一维数组（向量）。 shape=(3, 1):  3 行 1 列的二维数组（矩阵）。
+    action_input = layers.Concatenate()(agents_action_input) # (None, 9) # ------------------
+
+    # action_out = layers.Dense(32, activation="selu", kernel_initializer="lecun_normal")(action_input) #--------------
     action_out = layers.Dense(32, activation="selu", kernel_initializer="lecun_normal")(action_input)
     action_out = layers.BatchNormalization()(action_out)
 

@@ -118,7 +118,8 @@ for ep in range(num_episodes):
         buffer.record((prev_state, actions, rewards, new_state))
         
         # Sum of rewards of all agents
-        episodic_reward += sum(rewards)
+        # episodic_reward += sum(rewards) #--------
+        episodic_reward = sum(rewards)
 
         # Updating parameters of actor and critic 
         # of all  agents using maddpg algorithm
