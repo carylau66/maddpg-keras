@@ -6,14 +6,22 @@ import numpy as np
 
 from config import NUM_STEPS, NUM_EPISODES
 
-#Dimension of State Space for single agent
-DIM_AGENT_STATE = 5
+#Dimension of State Space for single agent ------
+DIM_AGENT_STATE = 3 
+DIM_AGENT_STATE_E = 3 #为了少改代码，保持一致
+DIM_AGENT_STATE_G = 3
 
-# Number of agents
+# Number of agents 
 NUM_AGENTS = 3
+NUM_AGENTS_E = 2
+NUM_AGENTS_G = 1
+# 动作维度
+DIM_ACTION = 3
+#Dimension of State Space
+dim_state = DIM_AGENT_STATE * NUM_AGENTS
 
-#Time Difference Between 2 Steps
-dt = 0.4
+#Constant 
+a = 20
 
 #Number of Episodes
 num_episodes = NUM_EPISODES
@@ -21,249 +29,99 @@ num_episodes = NUM_EPISODES
 #Number of Steps
 num_steps = NUM_STEPS
 
-#Minimum turing radius of Pursuer and Evader
-rho = 0.3
-rho_e = 0.3
 
-#velocity of pursuer
-v = 1.0
-
-#Velocity of Evader during training
-ve = 0.5
-
-#angle between initial velocity and reference
-te = 3*np.pi/4
-
-#Dimension of State Space
-dim_state = DIM_AGENT_STATE*NUM_AGENTS
 
 
 class ENVIRONMENT:
   def __init__(self):
-    self.p1_rx = random.uniform(0.0, 5.0)
-    self.p1_ry = random.uniform(0.0, 5.0)
-    self.p2_rx = random.uniform(0.0, 5.0)
-    self.p2_ry = random.uniform(0.0, 5.0)
-    self.p1_vx = v
-    self.p1_vy = 0.0
-    self.p2_vx = v
-    self.p2_vy = 0.0
-    self.e_rx = random.uniform(0.0, 5.0)
-    self.e_ry = random.uniform(0.0, 5.0)
-    self.e_vx = ve*np.cos(te)
-    self.e_vy = ve*np.sin(te)
-    '''
-    self.state_p1_e = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_ry, self.e_rx,
-                  self.e_ry]
-    self.state_p2_e = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_ry, self.e_rx,
-                  self.e_ry]
-    self.state_p1_p2 = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_ry, self.p2_rx,
-                   self.p1_ry]
-    self.state_p2_p1 = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_ry, self.p1_rx,
-                   self.p1_ry]
-    '''
+    self.e1_1 = random.uniform(0.0, 1.0 + 1e-10) * 100 # 报价P，0-100, 因为生成的随机数不含上界 为了可以取到1
+    self.e1_2 = random.uniform(0.0, 1.0 + 1e-10) + 1 # 质量Q
+    self.e1_3 = random.uniform(0.0, 1.0 + 1e-10)     # 采购比例
 
-  def initial_state(self):
-    state_p1_e = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry]
-    state_p2_e = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry]
-    state_p1_p2 = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.p2_rx,
-                   self.p1_ry]
-    state_p2_p1 = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.p1_rx,
-                   self.p1_ry]
-    return state_p1_e, state_p2_e
-    
+    self.e2_1 = random.uniform(0.0, 1.0 + 1e-10) * 100
+    self.e2_2 = random.uniform(0.0, 1.0 + 1e-10) + 1
+    self.e2_3 = 1 - self.e1_3
 
+    self.g_1 = random.uniform(0.0, 1.0 + 1e-10) # 对1的采购比例
+    self.g_2 = random.uniform(0.0, 1.0 + 1e-10) * 0.25 # 激励1
+    self.g_3 = random.uniform(0.0, 1.0 + 1e-10) * 0.25 # 激励2
+    # self.g_3 = random.uniform(0.0, 1.0 + 1e-10)
+
+  
   def initial_obs(self):
-    #state_p1_e, state_p2_e = self.initial_state()
-
-    d_p1_e = L(self.p1_rx, self.p1_ry, self.e_rx, self.e_ry)
-    d_p2_e = L(self.p2_rx, self.p2_ry, self.e_rx, self.e_ry)
-    d_p1_p2 = L(self.p1_rx, self.p1_ry, self.p2_rx, self.p2_ry)
-    d_p2_p1 = L(self.p2_rx, self.p2_ry, self.p1_rx, self.p1_ry)
-    d_e_p1 = d_p1_e
-    d_e_p2 = d_p2_e
-    
-    phi_p1_e  = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry, v)
-    phi_p1_p2 = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.p2_rx,
-                  self.p2_ry, v)
-    phi_p2_e  = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry, v)
-    phi_p2_p1 = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.p1_rx,
-                  self.p1_ry, v)
-    phi_e_p1  = phi(self.e_rx, self.e_ry, self.e_vx, self.e_vy, self.p1_rx,
-                  self.p1_ry, ve)
-    phi_e_p2  = phi(self.e_rx, self.e_ry, self.e_vx, self.e_vy, self.p2_rx,
-                  self.p2_ry, ve)
-    
-    obs = [d_p1_e/30.0, phi_p1_e/np.pi, 0.0, d_p1_p2/30.0, phi_p1_p2/np.pi,
-           d_p2_e/30.0, phi_p2_e/np.pi, 0.0, d_p2_p1/30.0, phi_p2_p1/np.pi,
-           d_e_p1/30.0, phi_e_p1/np.pi, d_e_p2/30.0, phi_e_p2/np.pi, 1.0]
-           #d_e_p1/30.0, phi_e_p1/np.pi, d_e_p2/30.0,  phi_e_p2/np.pi]
-
+    # 所有智能体的状态列出来
+    obs = [self.e1_1, self.e1_2, self.e1_3,
+           self.e2_1, self.e2_2, self.e2_3,
+           self.g_1, self.g_2, self.g_3]
     return obs
 
-  def state_step(self, actions):
-    state_p1_e = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry]
-    state_p2_e = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry]
-    state_e_p1 = [self.e_rx, self.e_ry, self.e_vx, self.e_vy, self.p1_rx,
-                  self.p1_ry]
+  # def state_step(self, actions):
+  #   self.e1_1 = actions[0][0] *100
+  #   self.e1_2 = actions[0][1] + 1
+  #   self.e1_3 = actions[2][0]
 
-    theta_v_p1 = thetap(self.p1_vx, self.p1_vy, v)
-    theta_v_p2 = thetap(self.p2_vx, self.p2_vy, v)
-    theta_v_e  = thetap(self.e_vx, self.e_vy, ve)
+  #   self.e2_1 = actions[1][0] *100
+  #   self.e2_2 = actions[1][1] + 1
+  #   self.e2_3 = 1 - self.e1_3
+
+  #   self.g_1 = actions[2][0]
+  #   self.g_2 = actions[2][1] * 0.25
+  #   self.g_3 = actions[2][2] * 0.25
 
 
-    del_rx_p1 = self.p1_vx * dt
-    del_ry_p1 = self.p1_vy * dt
-    del_rx_p2 = self.p2_vx * dt
-    del_ry_p2 = self.p2_vy * dt
-    del_rx_e  = self.e_vx  * dt
-    del_ry_e  = self.e_vy  * dt
+  #   state_e1 = [self.e1_1, self.e1_2, self.e1_3]
+  #   state_e2 = [self.e2_1, self.e2_2, self.e2_3]
+  #   state_g1 = [self.g_1, self.g_2, self.g_3]
 
-    del_theta_v_p1 = (v/rho)*actions[0]*dt
-    del_theta_v_p2 = (v/rho)*actions[1]*dt
-    del_theta_v_e  = (ve/rho_e)*actions[2]*dt
-
-    theta_v_p1 = theta_v_p1 + del_theta_v_p1
-    theta_v_p2 = theta_v_p2 + del_theta_v_p2
-    theta_v_e  = theta_v_e  + del_theta_v_e
-
-    self.p1_rx = self.p1_rx + del_rx_p1
-    self.p1_ry = self.p1_ry + del_ry_p1
-    self.p1_vx = v * np.cos(theta_v_p1)
-    self.p1_vy = v * np.sin(theta_v_p1)
-
-    self.p2_rx = self.p2_rx + del_rx_p2
-    self.p2_ry = self.p2_ry + del_ry_p2
-    self.p2_vx = v * np.cos(theta_v_p2)
-    self.p2_vy = v * np.sin(theta_v_p2)
-
-    self.e_rx = self.e_rx + del_rx_e
-    self.e_ry = self.e_ry + del_ry_e
-    self.e_vx = ve * np.cos(theta_v_e)
-    self.e_vy = ve * np.sin(theta_v_e)
-
-    state_p1_e = [self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry]
-    state_p2_e = [self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry]
-
-    return state_p1_e, state_p2_e
+  #   return state_e1, state_e2
 
   def step(self, actions):
+    # state_e1, state_e2 = self.state_step(actions)
+    self.e1_1 = actions[0] *100  # 0 - 100
+    self.e1_2 = actions[1] + 1   # 1 - 2
+    self.e1_3 = actions[2]      # 0 - 1
 
-    old_phi_p1 = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry, v)
-    old_phi_p2 = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry, v)
-    
-    state_p1_e, state_p2_e = self.state_step(actions)
+    self.e2_1 = actions[3] *100
+    self.e2_2 = actions[4] + 1
+    self.e2_3 = 1 - self.e1_3       # 0 - 1
 
-    '''
-    obs_p1 = [d_p1_e/30.0, phi_p1_e/np.pi, (new_phi_p1-old_phi_p1)/(dt)]
-    obs_p2 = [d_p2_e/30.0, phi_p2_e/np.pi, (new_phi_p2-old_phi_p2)/(dt)]
+    self.g_1 = actions[6]        # 0 - 1
+    self.g_2 = actions[7] * 0.25 # 0-0.25
+    self.g_3 = actions[8] * 0.25 # 0-0.25
 
-    obs = [d_p1_e/30.0, phi_p1_e/np.pi, (new_phi_p1-old_phi_p1)/(dt),
-           d_p2_e/30.0, phi_p2_e/np.pi, (new_phi_p2-old_phi_p2)/(dt)]
-    '''
-    d_p1_e = L(self.p1_rx, self.p1_ry, self.e_rx, self.e_ry)
-    d_p2_e = L(self.p2_rx, self.p2_ry, self.e_rx, self.e_ry)
-    d_p1_p2 = L(self.p1_rx, self.p1_ry, self.p2_rx, self.p2_ry)
-    d_p2_p1 = L(self.p2_rx, self.p2_ry, self.p1_rx, self.p1_ry)
-    d_e_p1  = d_p1_e
-    d_e_p2  = d_p2_e
-    
-    phi_p1_e  = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry, v)
-    phi_p1_p2 = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.p2_rx,
-                  self.p2_ry, v)
-    phi_p2_e  = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry, v)
-    phi_p2_p1 = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.p1_rx,
-                  self.p1_ry, v)
-    phi_e_p1  = phi(self.e_rx, self.e_ry, self.e_vx, self.e_vy, self.p1_rx,
-                  self.p1_ry, ve)
-    phi_e_p2  = phi(self.e_rx, self.e_ry, self.e_vx, self.e_vy, self.p2_rx,
-                  self.p2_ry, ve)
-    
-    new_phi_p1 = phi(self.p1_rx, self.p1_ry, self.p1_vx, self.p1_vy, self.e_rx,
-                  self.e_ry, v)
-    new_phi_p2 = phi(self.p2_rx, self.p2_ry, self.p2_vx, self.p2_vy, self.e_rx,
-                  self.e_ry, v)
-    
-    obs = [d_p1_e/30.0, phi_p1_e/np.pi, (new_phi_p1-old_phi_p1)/(dt), d_p1_p2/30.0, phi_p1_p2/np.pi,
-           d_p2_e/30.0, phi_p2_e/np.pi, (new_phi_p2-old_phi_p2)/(dt), d_p2_p1/30.0, phi_p2_p1/np.pi,
-           d_e_p1/30.0, phi_e_p1/np.pi, d_e_p2/30.0,  phi_e_p2/np.pi, 1.0]
+    obs = [self.e1_1, self.e1_2, self.e1_3,
+           self.e2_1, self.e2_2, self.e2_3,
+           self.g_1, self.g_2, self.g_3]
 
     return obs
   
-    
+#质量函数
+def ceq(q):
+   return 5*q**2+5*q+2   
 #Function for generating sigmoid output of Input Function
 def sigmoid(x):
     val = 1/(1+np.exp(-x))
     return val
-
-#Calculating Distance between Pursuer and Evader
-def L(rx1, ry1, rx2, ry2):
-    d = np.sqrt((rx2-rx1)**2 + (ry2-ry1)**2)
-    return d
-
-
-#Calculating angle between velocity and reference axis
-def thetap(vx, vy, v):
-
-    angle = math.acos(vx/v)*((vy+0.001)/abs(vy+0.001))-np.pi*((vy+0.0001)/(abs(vy)+0.0001)-1)
-    return angle
-
-def alph(state):
-    l = L(state)
-    angle = math.acos((state[4]-state[0])/l)*(state[5]-state[1]+0.0001)/abs(state[5]-state[1]+0.0001)-(np.pi)*(((state[5]-state[1]+0.0001)/abs(0.0001+state[5]-state[1]))-1)
-    return angle
+def uq(q):
+    q0 = 1
+    L = 2
+    k = 5
+    return L/(1 + math.exp(-k*(q-q0)))
 
 #Reward Calculator
 def reward(state):
   rewards = []
   for i in range(NUM_AGENTS):
-    '''
-    ag_state = []
-    for j in state[i*4:(i+1)*4]:
-      ag_state.append(j)
-    for j in ev_state:
-      ag_state.append(j)
-    '''
-
+    # 企业1
     if i == 2:
-      r1 = 10*state[0+i*5]#-10*np.exp(-3*state[0+i*5])
-      r2 = 10*np.exp(-1*state[1+i*5])
-      r3 = 5*np.arctan(1*state[2+i*5])
-      r4 = 10*state[2+i*5]#-10*np.exp(-3*state[2+i*5])
-      r5 = 10*np.exp(-1*state[0+i*5]*state[3+i*5])
-      r =  r1  + r4 #+ r2  #+ r3 
-      
+      r1 = a * uq(state[1]) - (0.75 + state[5]) * state[0]
+      r2 = a * uq(state[3]) - (0.75 + state[6]) * state[2]
+      r = (r1**2)/(r1+r2) + (r2**2)/(r1+r2)
       rewards.append(r)
-
     else:
-
-      r1 = 10*np.exp(-3*state[0+i*5])
-      r2 = 10*np.exp(-1*state[1+i*5])
-      r3 = 5*np.arctan(1*state[2+i*5])
-      r4 = 10*np.exp(-3*state[3+i*5])
-      r5 = 10*np.exp(-1*state[0+i*5]*state[3+i*5])
-      r =  r1  + r2 + r3 + r4 #+ r2  #+ r3 
-      
+      r = ((0.75 + state[2+i*3]) * state[i*3] - ceq(state[1+i*3])) * state[2+i*3]
       rewards.append(r)
 
   return rewards
 
-#Calculator of Angle between velocity and line joining Evader and Pursuer
-def phi(rx1, ry1, vx1, vy1, rx2, ry2, v):
-    d = L(rx1, ry1, rx2, ry2)
-    rx2_rx1 = rx2 - rx1
-    ry2_ry1 = ry2 - ry1
-    angle = math.acos(round((rx2_rx1*vx1+ ry2_ry1*vy1)/(d*v), 4))
-    return angle
+

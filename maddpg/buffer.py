@@ -5,7 +5,7 @@
 import numpy as np
 import tensorflow as tf
 
-from env.env import NUM_AGENTS, DIM_AGENT_STATE
+from env.env import NUM_AGENTS, NUM_AGENTS_E, NUM_AGENTS_G, DIM_AGENT_STATE, DIM_AGENT_STATE_E, DIM_AGENT_STATE_G, DIM_ACTION
 from config import CRITIC_LR, ACTOR_LR, GAMMA, TAU
 
 #Dimension of State Space for single agent
@@ -16,6 +16,7 @@ num_agents = NUM_AGENTS
 
 #Dimension of State Space
 dim_state = dim_agent_state*num_agents
+# dim_state = DIM_AGENT_STATE_E*NUM_AGENTS_E + DIM_AGENT_STATE_G*NUM_AGENTS_G
 
 # Learning rate for actor-critic models
 critic_lr = CRITIC_LR
@@ -83,7 +84,8 @@ class Buffer:
         # Instead of list of tuples as the exp.replay concept go
         # We use different np.arrays for each tuple element
         self.state_buffer = np.zeros((self.buffer_capacity, dim_state))
-        self.action_buffer = np.zeros((self.buffer_capacity, num_agents))
+        # self.action_buffer = np.zeros((self.buffer_capacity, num_agents)) #---------------------
+        self.action_buffer = np.zeros((self.buffer_capacity, num_agents * DIM_ACTION)) # 第二个维度是动作的数量
         self.reward_buffer = np.zeros((self.buffer_capacity, num_agents))
         self.next_state_buffer = np.zeros((self.buffer_capacity, dim_state))
 
@@ -125,7 +127,7 @@ class Buffer:
       cr_models: list of length num_agents where each element is tf model
         Critic models
       
-      target_ac: list of lenght num_agents where each element is tf model
+      target_ac: list of length num_agents where each element is tf model
         Target actor models
 
       target_cr: list of legnth num_agents where each element is tf model
@@ -157,14 +159,19 @@ class Buffer:
 
         # Create array of shape (batch_size,num_agents) with all elements zero
 
-        target_actions = np.zeros((self.batch_size, num_agents))
+        # target_actions = np.zeros((self.batch_size, num_agents))   ----------------
+        target_actions = np.zeros((self.batch_size, num_agents * DIM_ACTION))
         
         # Calculating target actions i.e. a_i' (i=range(0,num_agents)) to calculate y
 
         for j in range(num_agents):
+          # ------------------------------<
           target_actions[:,j] = tf.reshape(
               target_ac[j](next_state_batch[:,dim_agent_state*j:dim_agent_state*(j+1)]), [self.batch_size]
               )
+          # --------------------------->
+          # target_action = tf.reshape(target_ac[j](next_state_batch[:, dim_agent_state * j:dim_agent_state * (j + 1)]), [self.batch_size])
+          # target_actions[:, j] = target_action 
         
         # Creating list of arguments for target critic network (Q'), to calculate y
         # arguments of Q' will be (x', a_1', a_2', ..., a_n') where n=num_agents
@@ -219,7 +226,8 @@ class Buffer:
 
         # Create array of shape (batch_size,num_agents) with all elements zero
 
-        actions = np.zeros((self.batch_size, num_agents))
+        # actions = np.zeros((self.batch_size, num_agents)) #----------
+        actions = np.zeros((self.batch_size, num_agents * DIM_ACTION))
 
         # Calculating actions i.e. a_i (i=range(0,num_agents)) to calculate Q_i(x, a_1, a_2, ..., a_n))
         # to calculate gradient of Q_i(x, a_1, a_2, ...,a_i, ..., a_n)) w.r.t a_i

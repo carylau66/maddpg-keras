@@ -33,6 +33,7 @@ num_steps = NUM_STEPS
 std_dev = STD_DEV
 ou_noise = OUActionNoise(mean=np.zeros(1), std_deviation=float(std_dev) * np.ones(1))
 
+
 # Neural Net Models for agents will be saved in these lists
 ac_models = []
 cr_models = []
@@ -58,13 +59,15 @@ buffer = Buffer(NUM_BUFFER, BATCH_SIZE)
 def policy(state, noise_object, model):
     
     sampled_actions = tf.squeeze(model(state))
-    noise = noise_object()
+    # noise = noise_object() ------------
 
     # Adding noise to action
-    sampled_actions = sampled_actions.numpy() + noise
+    # sampled_actions = sampled_actions.numpy() + noise  -----------------
+    sampled_actions = sampled_actions.numpy() # 暂且去噪声，后续尝试高斯噪声
 
     # We make sure action is within bounds
-    legal_action = np.clip(sampled_actions, -1.0, 1.0)
+    # legal_action = np.clip(sampled_actions, -1.0, 1.0) ----------------
+    legal_action = np.clip(sampled_actions, 0.0, 1.0) # 确保所有的动作值都在合法的范围内，防止超出预期的动作空间。
 
     return [np.squeeze(legal_action)]
 
@@ -92,11 +95,14 @@ for ep in range(num_episodes):
         actions = []
         
         # Get actions for each agents from respective models and store them in list
+        # action 本身是个list，存的array，所以用action[0]
         for j, model in enumerate(ac_models):
           action = policy(tf_prev_state[:,dim_agent_state*j:dim_agent_state*(j+1)], 
-		  					ou_noise, model)
-          actions.append(float(action[0]))
-          
+		  					ou_noise, model) 
+          # actions.append(float(action[0]))
+          # 虽然本身是浮点数，但是精度不够，转成float保更多精度
+          actions.extend([float(element) for element in action[0]])
+        # print(actions)
         # Recieve new state and reward from environment.
         new_state = env.step(actions)
         

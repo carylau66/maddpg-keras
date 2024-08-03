@@ -5,14 +5,14 @@
 
 # Number of Episodes
 # NUM_EPISODES = 3000
-NUM_EPISODES = 30
+NUM_EPISODES = 1000
 
 # Checkpoints after which save models
 CHECKPOINTS = 100
 
 # Number of Steps in each episodes
 # NUM_STEPS = 100
-NUM_STEPS = 10
+NUM_STEPS = 100
 
 # For adding noise for exploration
 STD_DEV = 0.2

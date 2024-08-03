@@ -30,7 +30,8 @@ def get_actor():
     
     # Using tanh activation as action values for
     # for our environment lies between -1 to +1
-    outputs = layers.Dense(1, activation="tanh", kernel_initializer=last_init)(out)
+    # outputs = layers.Dense(1, activation="tanh", kernel_initializer=last_init)(out) ---------------
+    outputs = layers.Dense(3, activation="sigmoid", kernel_initializer=last_init)(out)
     
     outputs = outputs 
     model = tf.keras.Model(inputs, outputs)
