@@ -85,7 +85,7 @@ for ep in range(num_episodes):
     prev_state = env.initial_obs()
     
     episodic_reward = 0
-
+    
     for i in range(num_steps):
         
         # Expanding dimension of state from 1-d array to 2-d array
@@ -120,6 +120,7 @@ for ep in range(num_episodes):
         # Sum of rewards of all agents
         # episodic_reward += sum(rewards) #--------
         episodic_reward = sum(rewards)
+        
 
         # Updating parameters of actor and critic 
         # of all  agents using maddpg algorithm

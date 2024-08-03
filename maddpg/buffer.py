@@ -257,7 +257,7 @@ class Buffer:
             # Here batch of x = state_batch_0 i.e. first element of batch
 
             state_actions = [np.array([state_batch[0]])]
-            temp_actions = [] # ---------
+            temp_actions = [] # 用来存每个智能体的动作，最后成一个一维num_agents*DIM_ACTION个元素的变量，再加入到state_actions中，state_actions[0]是状态，state_actions[1]是动作1*9
             for k in range(num_agents):
                 if k==i:
                     # state_actions.append(action_) #---------------
